@@ -6,7 +6,7 @@ component {
 	,	required string apiUrl= "http://ws.audioscrobbler.com/2.0/"
 	,	numeric throttle= 200
 	,	numeric httpTimeOut= 60
-	,	boolean debug= false
+	,	boolean debug= ( request.debug ?: false )
 	) {
 		this.apiKey= arguments.apiKey;
 		this.secretKey= arguments.secretKey;
@@ -14,9 +14,6 @@ component {
 		this.httpTimeOut= arguments.httpTimeOut;
 		this.throttle= arguments.throttle;
 		this.debug= arguments.debug;
-		if ( structKeyExists( request, "debug" ) && request.debug == true ) {
-			this.debug= request.debug;
-		}
 		this.lastRequest= 0;
 		return this;
 	}
