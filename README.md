@@ -9,9 +9,13 @@
 # cflastfm
 Last.fm / Audioscrobbler.com ColdFusion Rest API Client
 
-# Changes
+## To Install
+Run the following from commandbox:
+`box install cflastfm`
+
+## Changes
 2019-05-28 Open source release
 
-# API documentation
+## API documentation
 https://www.last.fm/api
 
