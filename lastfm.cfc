@@ -14,7 +14,7 @@ component {
 		this.httpTimeOut= arguments.httpTimeOut;
 		this.throttle= arguments.throttle;
 		this.debug= arguments.debug;
-		this.lastRequest= 0;
+		this.lastRequest= server.lastfm_lastRequest ?: 0;
 		return this;
 	}
 
@@ -50,35 +50,32 @@ component {
 		structDelete( arguments, "apiMethod" );
 		out.requestUrl &= this.structToQueryString( arguments );
 		this.debugLog( out.requestUrl );
-		lock name="lastfm_limiter" type="exclusive" timeOut=this.httpTimeOut throwOnTimeOut="false" {
-			if ( this.lastRequest > 0 ) {
-				arguments.wait= this.throttle - ( getTickCount() - this.lastRequest );
-				if ( arguments.wait > 0 ) {
-					this.debugLog( "Pausing for #arguments.wait#/ms" );
-					cfthread( duration=arguments.wait, action="sleep" );
-				}
+		// throttle requests by sleeping the thread to prevent overloading api
+		if ( this.lastRequest > 0 && this.throttle > 0 ) {
+			arguments.wait= this.throttle - ( getTickCount() - this.lastRequest );
+			if ( arguments.wait > 0 ) {
+				this.debugLog( "Pausing for #arguments.wait#/ms" );
+				cfthread( duration=arguments.wait, action="sleep" );
 			}
-			cftimer( type="debug", label="lastfm request" ) {
-				cfhttp( result="http", method="GET", url=out.requestUrl, charset="UTF-8", throwOnError=false, timeOut=this.httpTimeOut );
+		}
+		cftimer( type="debug", label="lastfm request" ) {
+			cfhttp( result="http", method="GET", url=out.requestUrl, charset="UTF-8", throwOnError=false, timeOut=this.httpTimeOut );
+			if ( this.throttle > 0 ) {
+				this.lastRequest= getTickCount();
+				server.lastfm_lastRequest= this.lastRequest;
 			}
-			this.lastRequest= getTickCount();
-			out.response= toString( http.fileContent );
 		}
-		this.debugLog( http );
-		this.debugLog( out.response );
-		//  RESPONSE CODE ERRORS 
-		if ( !structKeyExists( http, "responseHeader" ) || !structKeyExists( http.responseHeader, "Status_Code" ) || http.responseHeader.Status_Code == "" ) {
-			out.statusCode= 500;
-		} else {
-			out.statusCode= http.responseHeader.Status_Code;
-		}
+		out.response= toString( http.fileContent );
+		// this.debugLog( http );
+		// this.debugLog( out.response );
+		out.statusCode = http.responseHeader.Status_Code ?: 500;
 		this.debugLog( out.statusCode );
 		if ( left( out.statusCode, 1 ) == 4 || left( out.statusCode, 1 ) == 5 ) {
 			out.success= false;
 			out.error= "status code error: #out.statusCode#";
 		} else if ( out.response == "Connection Timeout" || out.response == "Connection Failure" ) {
 			out.error= out.response;
-		} else if ( listFind( "200,201", http.responseHeader.Status_Code ) ) {
+		} else if ( left( out.statusCode, 1 ) == 2 ) {
 			out.success= true;
 		}
 		//  parse response 
@@ -161,7 +158,7 @@ component {
 	 */
 	struct function artistCorrection( required string artist ) {
 		var args= {
-		"artist"= replace( replace( arguments.artist, "&", "and", "all" ), "/", "", "all" )
+			"artist"= replace( replace( arguments.artist, "&", "and", "all" ), "/", "", "all" )
 		};
 		var out= this.apiRequest(
 			apiMethod= "artist.getCorrection"
@@ -267,7 +264,7 @@ component {
 	 */
 	struct function artistTopTags( required string artist, boolean autocorrect= false ) {
 		var args= {
-		"autocorrect"= ( arguments.autocorrect ? 1 : 0 )
+			"autocorrect"= ( arguments.autocorrect ? 1 : 0 )
 		};
 		if ( len( arguments.artist ) == 36 && listLen( arguments.artist, "-" ) == 5 ) {
 			args[ "mbid" ]= arguments.artist;
@@ -364,7 +361,7 @@ component {
 	 */
 	struct function trackSimilar( required string track, string artist= "", boolean autocorrect= false, numeric limit= 50 ) {
 		var args= {
-		"limit"= arguments.limit
+			"limit"= arguments.limit
 		};
 		if ( len( arguments.track ) == 36 && listLen( arguments.track, "-" ) == 5 ) {
 			args[ "mbid" ]= arguments.track;
@@ -446,7 +443,7 @@ component {
 	 */
 	struct function albumInfo( required string album, required string artist, string lang= "en", boolean autocorrect= false, string username= "" ) {
 		var args= {
-		"lang"= lCase( arguments.lang )
+			"lang"= lCase( arguments.lang )
 		};
 		if ( len( arguments.album ) == 36 && listLen( arguments.album, "-" ) == 5 ) {
 			args[ "mbid" ]= arguments.album;
@@ -470,7 +467,7 @@ component {
 	 */
 	struct function albumTags( required string album, required string artist, string lang= "en", boolean autocorrect= false, string username= "" ) {
 		var args= {
-		"lang"= lCase( arguments.lang )
+			"lang"= lCase( arguments.lang )
 		};
 		if ( len( arguments.album ) == 36 && listLen( arguments.album, "-" ) == 5 ) {
 			args[ "mbid" ]= arguments.album;
@@ -494,7 +491,7 @@ component {
 	 */
 	struct function albumTopTags( required string album, required string artist, string lang= "en", boolean autocorrect= false ) {
 		var args= {
-		"lang"= lCase( arguments.lang )
+			"lang"= lCase( arguments.lang )
 		};
 		if ( len( arguments.album ) == 36 && listLen( arguments.album, "-" ) == 5 ) {
 			args[ "mbid" ]= arguments.album;
@@ -546,7 +543,7 @@ component {
 	 */
 	struct function tagSimilar( required string tag ) {
 		var args= {
-		"tag"= arguments.tag
+			"tag"= arguments.tag
 		};
 		var out= this.apiRequest(
 			apiMethod= "tag.getSimilar"

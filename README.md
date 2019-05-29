@@ -1,4 +1,4 @@
-# last.fm
+# cflastfm
 Last.fm / Audioscrobbler.com ColdFusion Rest API Client
 
 # Changes
