@@ -78,7 +78,7 @@ component {
 		} else if ( left( out.statusCode, 1 ) == 2 ) {
 			out.success= true;
 		}
-		//  parse response 
+		// parse response 
 		if ( len( out.response ) ) {
 			try {
 				out.json= deserializeJSON( out.response );
