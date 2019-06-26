@@ -43,6 +43,7 @@ component {
 		,	statusCode= 0
 		,	response= ""
 		,	requestUrl= this.apiUrl
+		,	delay= 0
 		};
 		arguments[ "format" ]= "json";
 		arguments[ "api_key" ]= this.apiKey;
@@ -52,10 +53,10 @@ component {
 		this.debugLog( out.requestUrl );
 		// throttle requests by sleeping the thread to prevent overloading api
 		if ( this.lastRequest > 0 && this.throttle > 0 ) {
-			var wait= this.throttle - ( getTickCount() - this.lastRequest );
-			if ( wait > 0 ) {
-				this.debugLog( "Pausing for #wait#/ms" );
-				sleep( wait );
+			out.delay= this.throttle - ( getTickCount() - this.lastRequest );
+			if ( out.delay > 0 ) {
+				this.debugLog( "Pausing for #out.delay#/ms" );
+				sleep( out.delay );
 			}
 		}
 		cftimer( type="debug", label="lastfm request" ) {
