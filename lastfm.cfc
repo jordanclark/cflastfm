@@ -6,8 +6,9 @@ component {
 	,	required string apiUrl= "http://ws.audioscrobbler.com/2.0/"
 	,	numeric throttle= 200
 	,	numeric httpTimeOut= 60
-	,	boolean debug= ( request.debug ?: false )
+	,	boolean debug
 	) {
+		arguments.debug = ( arguments.debug ?: request.debug ?: false );
 		this.apiKey= arguments.apiKey;
 		this.secretKey= arguments.secretKey;
 		this.apiUrl= arguments.apiUrl;
@@ -27,7 +28,12 @@ component {
 				request.log( arguments.input );
 			}
 		} else if( this.debug ) {
-			cftrace( text=( isSimpleValue( arguments.input ) ? arguments.input : "" ), var=arguments.input, category="LastFM", type="information" );
+			var info= ( isSimpleValue( arguments.input ) ? arguments.input : serializeJson( arguments.input ) );
+			cftrace(
+				var= "info"
+			,	category= "LastFM"
+			,	type= "information"
+			);
 		}
 		return;
 	}
